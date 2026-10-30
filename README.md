@@ -1,183 +1,63 @@
-# Clinic Database System <a name="about-project"></a>
+# Clinic database with row-level security
 
-> A secure and scalable medical database system built with Supabase that manages patient records, doctor information, appointments, and treatments with robust role-based security.
+A clinic database on Supabase where **the database itself decides who can see what**. Patients sign in and see only their own appointments and treatments. Doctors see and manage everything. Anyone else sees no medical data at all.
 
-**Clinic Database System** is a comprehensive healthcare management solution that provides secure data storage and access control for medical facilities. It ensures patient privacy through Row Level Security while giving healthcare providers efficient tools to manage medical records.
+**Tools:** PostgreSQL, Supabase, Supabase Auth, row-level security (RLS)
+**Portfolio:** [emillio-james.github.io](https://emillio-james.github.io)
 
-## 🛠 Built With <a name="built-with"></a>
+## Why row-level security
 
-### Tech Stack <a name="tech-stack"></a>
+Most apps filter data in their own code, so one forgotten filter can show a patient someone else's records. With row-level security the rule lives in the database. Every query is filtered for the signed-in user automatically, whichever app or tool sends it.
 
-<details>
-  <summary>Backend</summary>
-  <ul>
-    <li><a href="https://supabase.com/">Supabase</a></li>
-  </ul>
-</details>
+## What's in this repository
 
-<details>
-<summary>Database</summary>
-  <ul>
-    <li><a href="https://www.postgresql.org/">PostgreSQL</a></li>
-  </ul>
-</details>
+| File | What it contains |
+|---|---|
+| [`schema.sql`](schema.sql) | Tables, sample data, links to Supabase Auth users, and the security policies |
+| [`tests.sql`](tests.sql) | Five security tests with the expected result above each query, plus checks |
+| [`SECURITY_NOTES.md`](SECURITY_NOTES.md) | How the roles and policies work, and what a real deployment would still need |
 
-<details>
-<summary>Security</summary>
-  <ul>
-    <li>Row Level Security (RLS)</li>
-    <li>Supabase Authentication</li>
-  </ul>
-</details>
+## How access works
 
-<!-- Features -->
+Each patient and doctor row has an `auth_id` that links it to a Supabase Auth account. The policies compare it with `auth.uid()`, the ID of whoever is signed in.
 
-### Key Features <a name="key-features"></a>
+| Signed in as | Patients | Doctors | Appointments | Treatments |
+|---|---|---|---|---|
+| Patient | Own profile only | All (to book) | Own, read-only | Own, read-only |
+| Doctor | All | All | All, can edit | All, can edit |
+| Signed in, not registered | None | All | None | None |
 
-- **[Secure Patient Data Management]** - Implements healthcare privacy standards with Row Level Security
-- **[Role-Based Access Control]** - Patients can view their records while doctors have full medical access
-- **[Comprehensive Medical Tracking]** - Manages appointments, treatments, and patient-doctor relationships
+A role column isn't needed: someone is a doctor because their auth ID is in the Doctors table.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## Test results
 
-<!-- GETTING STARTED -->
+I ran [`tests.sql`](tests.sql) against the schema and every test gave the expected result:
 
-## 💻 Getting Started <a name="getting-started"></a>
+| Test | Expected | Result |
+|---|---|---|
+| Patient John Kamau views records | Only his 1 appointment and 1 treatment | ✅ |
+| Patient edits an appointment | Blocked (`UPDATE 0`) | ✅ |
+| Patient Jane Wanjiku views records | Only her own, none of John's | ✅ |
+| Doctor views records | All 10 patients, 10 appointments, 8 treatments | ✅ |
+| Doctor updates an appointment and adds a treatment | Both succeed | ✅ |
+| Unregistered user views records | Nothing | ✅ |
 
-To set up your own clinic database system, follow these steps.
+A blocked update in RLS doesn't raise an error. The row is simply invisible to that user, so the update changes nothing, and the tests check for exactly that.
 
-### Prerequisites
+## How to run it
 
-- A Supabase account ([sign up here](https://supabase.com/))
-- Basic knowledge of SQL and database concepts
+1. Create a project at [supabase.com](https://supabase.com).
+2. Create test users under **Authentication → Users**, then swap their IDs into the `UPDATE … SET auth_id` lines in `schema.sql`.
+3. Run [`schema.sql`](schema.sql) in the **SQL Editor**, then [`tests.sql`](tests.sql).
 
-### Setup
+All names and phone numbers are fictional.
 
-1. **Create a Supabase Project**
-   - Go to [Supabase Dashboard](https://app.supabase.com/)
-   - Create a new project and wait for initialization
+## Ideas for next steps
 
-2. **Execute the Database Schema**
-   - Navigate to the SQL Editor in your Supabase project
-   - Copy and paste the entire schema from `schema.sql`
-   - Run the SQL commands to create tables and security policies
+- Limit each doctor to their own patients instead of everyone's.
+- Add an audit table that records who viewed or changed each record.
+- Add a billing table. The reporting side of a hospital database is in my [Hospital SQL project](https://github.com/Emillio-James/Hospital-SQL-Project).
 
-### Install
+---
 
-1. **Verify Table Creation**
-   - Check the Table Editor to ensure these tables exist:
-     - Patients
-     - Doctors  
-     - Appointments
-     - Treatments
-
-2. **Configure Authentication**
-   - Go to Authentication → Settings
-   - Enable Email/Password authentication
-   - Set up your authorized redirect URLs
-
-### Usage
-
-**For Patients:**
-- Sign up through your application using Supabase Auth
-- View personal medical appointments and treatment history
-- Access is read-only and restricted to own records
-
-**For Doctors:**
-- Access all patient records and medical data
-- Create and manage appointments
-- Update treatment records and medical information
-
-### Run tests
-
-Use the test queries included in the schema to verify security:
-
-```sql
--- Test patient access (should see only their data)
-SET ROLE authenticated;
-SET "request.jwt.claim.sub" TO 'patient-auth-uuid';
-SELECT * FROM Appointments;
-
--- Test doctor access (should see all data)  
-SET "request.jwt.claim.sub" TO 'doctor-auth-uuid';
-SELECT * FROM Appointments;
-```
-
-### Deployment
-
-This project is deployed on Supabase. To deploy your own instance:
-
-1. Create a new Supabase project
-2. Execute the provided schema.sql
-3. Configure authentication settings
-4. Connect your frontend application to the Supabase API
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- AUTHORS -->
-
-## 👥 Authors <a name="authors"></a>
-
-👤 **James Mwai**
-
-- GitHub: [@jameskins_svg](https://github.com/jameskins_svg)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- FUTURE FEATURES -->
-
-## 🔭 Future Features <a name="future-features"></a>
-
-- [ ] **Medical Billing Integration** - Connect with payment processing systems
-- [ ] **Prescription Management** - Digital prescription tracking and renewal
-- [ ] **Lab Results Portal** - Integration with laboratory systems for test results
-- [ ] **Telemedicine Features** - Virtual consultations and remote patient monitoring
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- CONTRIBUTING -->
-
-## 🤝 Contributing <a name="contributing"></a>
-
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](../../issues/).
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- SUPPORT -->
-
-## ⭐️ Show your support <a name="support"></a>
-
-If you find this clinic database system useful for your healthcare application, please give it a star! Your support helps improve medical data management for everyone.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ACKNOWLEDGEMENTS -->
-
-## 🙏 Acknowledgments <a name="acknowledgements"></a>
-
-I would like to thank the Supabase team for providing an excellent platform that makes secure database management accessible for healthcare applications.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- FAQ (optional) -->
-
-## ❓ FAQ <a name="faq"></a>
-
-- **How do patients access their medical records?**
-  - Patients sign up through your application, which connects to Supabase Auth. The RLS policies automatically filter data to show only their records.
-
-- **Can doctors from different specialties access all patient data?**
-  - Yes, the current security model allows all doctors full access to ensure comprehensive patient care, but this can be customized for specific privacy requirements.
-
-- **How do I add new patients to the system?**
-  - When a patient registers through your application, create a record in the Patients table with their Supabase auth UID to link their authentication with their medical data.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- LICENSE -->
-
-## 📝 License <a name="license"></a>
-
-This project is [MIT](./LICENSE) licensed.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+**James Mwai** · Data Analyst, Nairobi · [Portfolio](https://emillio-james.github.io) · emmjayjames@gmail.com

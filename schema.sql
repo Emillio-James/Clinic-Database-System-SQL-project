@@ -1,3 +1,13 @@
+-- =====================================================================
+-- Clinic database: schema, sample data and row-level security (Supabase)
+-- Author: James Mwai
+--
+-- Run in the Supabase SQL Editor. Patients and doctors are linked to
+-- Supabase Auth users through auth_id; the RLS policies at the bottom use
+-- auth.uid() to decide which rows each signed-in user can see or change.
+-- Security tests are in tests.sql. All names and numbers are fictional.
+-- =====================================================================
+
 -- Patients Table
 CREATE TABLE Patients (
     patient_id VARCHAR(10) PRIMARY KEY,
@@ -43,35 +53,35 @@ INSERT INTO Patients (patient_id, first_name, last_name, date_of_birth, gender, 
 ('P001', 'John', 'Kamau', '1980-01-15', 'Male', '0798532678'),
 ('P002', 'Jane', 'Wanjiku', '1990-02-25', 'Female', '0720867589'),
 ('P003', 'Alice', 'Mwangi', '2000-03-10', 'Female', '0739236490'),
-('P004', 'Bob', 'Otieno', '1975-04-05', 'Male', '074377901'),
+('P004', 'Bob', 'Otieno', '1975-04-05', 'Male', '0743779012'),
 ('P005', 'Charlie', 'Njoroge', '1985-05-20', 'Male', '0755566012'),
 ('P006', 'Grace', 'Achieng', '1995-06-30', 'Female', '0763324563'),
-('P007', 'Peter', 'Kariuki', '1988-07-25', 'Male', '0778426334'),
-('P008', 'Joy', 'Mutua', '1992-08-15', 'Female', '07833578345'),
-('P009', 'Brian', 'Omondi', '1982-09-10', 'Male', '07901006456'),
+('P007', 'Mercy', 'Kariuki', '1988-07-25', 'Female', '0778426334'),
+('P008', 'Joy', 'Mutua', '1992-08-15', 'Female', '0783357834'),
+('P009', 'Brian', 'Omondi', '1982-09-10', 'Male', '0790100645'),
 ('P010', 'Aisha', 'Ali', '1998-10-05', 'Female', '0701481167');
 
 -- Insert Doctors
 INSERT INTO Doctors (doctor_id, first_name, last_name, specialty, contact_info) VALUES
-('D001', 'Dr. Emily', 'Wangari', 'Cardiology', '0717384678'),
-('D002', 'Dr. Michael', 'Oluoch', 'Neurology', '0711956789'),
-('D003', 'Dr. Sarah', 'Kilonzo', 'Pediatrics', '0796357890'),
-('D004', 'Dr. David', 'Mutiso', 'Orthopedics', '0745046901'),
-('D005', 'Dr. Laura', 'Kariuki', 'Dermatology', '0754672512'),
-('D006', 'Dr. James', 'Mwangi', 'General Surgery', '0765096423'),
-('D007', 'Dr. Anne', 'Ndungu', 'Gynecology', '0711468534'),
-('D008', 'Dr. Peter', 'Omondi', 'ENT', '0785499845');
+('D001', 'Emily', 'Wangari', 'Cardiology', '0717384678'),
+('D002', 'Michael', 'Oluoch', 'Neurology', '0711956789'),
+('D003', 'Sarah', 'Kilonzo', 'Pediatrics', '0796357890'),
+('D004', 'David', 'Mutiso', 'Orthopedics', '0745046901'),
+('D005', 'Laura', 'Kariuki', 'Dermatology', '0754672512'),
+('D006', 'James', 'Mwangi', 'General Surgery', '0765096423'),
+('D007', 'Anne', 'Ndungu', 'Gynecology', '0711468534'),
+('D008', 'Peter', 'Omondi', 'ENT', '0785499845');
 
 -- Insert Appointments
 INSERT INTO Appointments (appointment_id, patient_id, doctor_id, appointment_date, appointment_time, reason_for_visit, appointment_status) VALUES
 ('A001', 'P001', 'D001', '2025-09-01', '09:00:00', 'Routine Checkup', 'Completed'),
 ('A002', 'P002', 'D002', '2025-09-15', '10:00:00', 'Headache', 'Completed'),
-('A003', 'P003', 'D003', '2025-09-20', '11:00:00', 'Fever', 'Missed'),
-('A004', 'P004', 'D004', '2025-09-25', '12:00:00', 'Back Pain', 'Pending'),
+('A003', 'P003', 'D003', '2025-09-20', '11:00:00', 'Fever', 'Completed'),
+('A004', 'P004', 'D004', '2025-09-25', '12:00:00', 'Back Pain', 'Completed'),
 ('A005', 'P005', 'D005', '2025-09-30', '13:00:00', 'Skin Rash', 'Completed'),
-('A006', 'P006', 'D006', '2025-10-05', '14:00:00', 'Stomach Ache', 'Pending'),
-('A007', 'P007', 'D007', '2025-10-10', '15:00:00', 'Pregnancy Checkup', 'Pending'),
-('A008', 'P008', 'D008', '2025-10-15', '16:00:00', 'Ear Infection', 'Pending'),
+('A006', 'P006', 'D006', '2025-10-05', '14:00:00', 'Stomach Ache', 'Completed'),
+('A007', 'P007', 'D007', '2025-10-10', '15:00:00', 'Pregnancy Checkup', 'Completed'),
+('A008', 'P008', 'D008', '2025-10-15', '16:00:00', 'Ear Infection', 'Completed'),
 ('A009', 'P009', 'D001', '2025-10-20', '17:00:00', 'Chest Pain', 'Pending'),
 ('A010', 'P010', 'D002', '2025-10-25', '18:00:00', 'Migraine', 'Pending');
 
@@ -84,9 +94,8 @@ INSERT INTO Treatments (treatment_id, appointment_id, treatment_description, tre
 ('T005', 'A005', 'Skin Biopsy', '2025-09-30', 1500.00),
 ('T006', 'A006', 'Endoscopy', '2025-10-05', 3000.00),
 ('T007', 'A007', 'Ultrasound', '2025-10-10', 2500.00),
-('T008', 'A008', 'Ear Cleaning', '2025-10-15', 800.00),
-('T009', 'A009', 'ECG', '2025-10-20', 1200.00),
-('T010', 'A010', 'CT Scan', '2025-10-25', 4000.00);
+('T008', 'A008', 'Ear Cleaning', '2025-10-15', 800.00);
+
 -- Add Auth IDs (Link to Supabase Auth Users)
 -- Update Patients with actual auth_ids
 UPDATE Patients SET auth_id = '5a25cd02-a6c8-4188-84d3-9bc8f34a682b' WHERE patient_id = 'P001';
@@ -159,71 +168,3 @@ CREATE POLICY "Doctors full access to treatments" ON Treatments
 FOR ALL USING (
   EXISTS (SELECT 1 FROM Doctors WHERE auth_id = auth.uid())
 );
--- TEST QUERIES
- -- Test Patient Access (Read-Only) - Using John Kamau (P001) as example
-SET ROLE authenticated;
-SET "request.jwt.claim.sub" TO '5a25cd02-a6c8-4188-84d3-9bc8f34a682b'; -- John Kamau's auth_id
-
-SELECT * FROM Appointments;  -- Should only show John's appointments (A001)
-SELECT * FROM Treatments;    -- Should only show John's treatments (T001)
-
--- Test Doctor Access (Full Access) - Using Dr. Emily Wangari (D001) as example
-SET "request.jwt.claim.sub" TO '88a9350d-4585-4402-9893-0fff5a0646a5'; -- Dr. Emily's auth_id
-
-SELECT * FROM Appointments;  -- Should show ALL 10 appointments
-SELECT * FROM Treatments;    -- Should show ALL 10 treatments
-
--- Test another patient - Jane Wanjiku (P002)
-SET "request.jwt.claim.sub" TO 'b0bf7a55-da1a-42be-a384-901058e95c9f'; -- Jane Wanjiku's auth_id
-
-SELECT * FROM Appointments;  -- Should only show Jane's appointments (A002)
-SELECT * FROM Treatments;    -- Should only show Jane's treatments (T002)
-
--- Test another doctor - Dr. Michael Oluoch (D002)
-SET "request.jwt.claim.sub" TO '18694e16-5959-449f-8712-ed10e8082fa5'; -- Dr. Michael's auth_id
-
-SELECT * FROM Appointments;  -- Should show ALL 10 appointments
-SELECT * FROM Treatments;    -- Should show ALL 10 treatments
-
--- Test Doctor Can Edit (should work)
-SET "request.jwt.claim.sub" TO '88a9350d-4585-4402-9893-0fff5a0646a5'; -- Dr. Emily's auth_id
-UPDATE Appointments SET appointment_status = 'Completed' WHERE appointment_id = 'A004';
-
--- Test Patient Cannot Edit (should fail)
-SET "request.jwt.claim.sub" TO '5a25cd02-a6c8-4188-84d3-9bc8f34a682b'; -- John Kamau's auth_id
-UPDATE Appointments SET appointment_status = 'Completed' WHERE appointment_id = 'A001'; -- This should fail
--- Verify all patients have auth_ids linked
-SELECT patient_id, first_name, last_name, auth_id IS NOT NULL as has_auth_id 
-FROM Patients 
-ORDER BY patient_id;
-
--- VERIFICATION QUERIES
--- Verify all doctors have auth_ids linked
-SELECT doctor_id, first_name, last_name, auth_id IS NOT NULL as has_auth_id 
-FROM Doctors 
-ORDER BY doctor_id;
-
--- Check appointment distribution by patient
-SELECT p.patient_id, p.first_name, p.last_name, 
-       COUNT(a.appointment_id) as appointment_count,
-       STRING_AGG(a.appointment_id, ', ') as appointment_ids
-FROM Patients p
-LEFT JOIN Appointments a ON p.patient_id = a.patient_id
-GROUP BY p.patient_id, p.first_name, p.last_name
-ORDER BY p.patient_id;
-
--- Check RLS policies status
-SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
-FROM pg_policies 
-WHERE schemaname = 'public'
-ORDER BY tablename, policyname;
-
--- Verify treatment costs by doctor specialty
-SELECT d.specialty, 
-       COUNT(t.treatment_id) as treatment_count,
-       SUM(t.treatment_cost) as total_revenue
-FROM Doctors d
-LEFT JOIN Appointments a ON d.doctor_id = a.doctor_id
-LEFT JOIN Treatments t ON a.appointment_id = t.appointment_id
-GROUP BY d.specialty
-ORDER BY total_revenue DESC;

@@ -114,14 +114,16 @@ SELECT * FROM Treatments;    -- Should return all treatments
 
 ### Permission Test
 ```sql
--- Test patient cannot edit (should fail)
+-- Patient tries to edit: RLS hides the row, so nothing changes (UPDATE 0, no error)
 SET "request.jwt.claim.sub" TO 'patient-auth-uuid';
-UPDATE Appointments SET status = 'Completed' WHERE appointment_id = 'A001';
+UPDATE Appointments SET appointment_status = 'Cancelled' WHERE appointment_id = 'A001';
 
--- Test doctor can edit (should succeed)
-SET "request.jwt.claim.sub" TO 'doctor-auth-uuid'; 
-UPDATE Appointments SET status = 'Completed' WHERE appointment_id = 'A001';
+-- Doctor edits: succeeds (UPDATE 1)
+SET "request.jwt.claim.sub" TO 'doctor-auth-uuid';
+UPDATE Appointments SET appointment_status = 'Completed' WHERE appointment_id = 'A009';
 ```
+
+The full set of tests, with the expected result above each query, is in [`tests.sql`](tests.sql).
 
 ## 📋 Policy Verification
 
@@ -144,38 +146,24 @@ AND tablename IN ('patients', 'doctors', 'appointments', 'treatments');
 ## 🚨 Security Considerations
 
 ### Data Privacy
-- Patient data is automatically filtered by RLS
-- No application-level filtering required
-- Database-level security ensures compliance
+- Patient data is filtered by the database itself, so a bug in an app cannot leak another patient's records.
+- Someone who is signed in but not registered as a patient or doctor sees no medical data.
 
 ### Access Control
-- Principle of least privilege enforced
-- Patients cannot access other patients' data
-- Doctors have broad access for comprehensive care
+- Patients get read-only access to their own records.
+- All doctors can see all records. That suits a small clinic; a larger one would limit doctors to their own patients.
+- The doctor list is readable by anyone, so patients can choose a doctor when booking.
 
-### Audit Trail
-Consider adding for production:
-- Audit logs for data access
-- Track who viewed/modified medical records
-- Compliance with healthcare regulations (HIPAA)
+### What this project does not cover
+These would be needed before real patient data went in:
+- Audit logs recording who viewed or changed a record
+- Limiting doctors to their own patients
+- Review against Kenya's Data Protection Act, 2019
 
 ## 🛠️ Maintenance
 
 ### Adding New Users
-1. Create user in Supabase Auth
-2. Insert record in appropriate table (Patients/Doctors)
-3. Set `auth_id` to match Auth user ID
-4. Security policies automatically apply
-
-### Policy Updates
-- Modify policies through SQL ALTER POLICY statements
-- Test thoroughly after policy changes
-- Maintain backup of policy definitions
-
-## ✅ Compliance Notes
-
-This security model supports:
-- **Patient confidentiality** through data isolation
-- **Healthcare provider access** for treatment purposes  
-- **Audit readiness** with proper logging
-- **Regulatory compliance** foundations
+1. Create the user in Supabase Auth
+2. Insert a row in the right table (Patients or Doctors)
+3. Set `auth_id` to the Auth user's ID
+4. The policies apply automatically
